@@ -26,7 +26,9 @@ import {
   Check,
   Power,
   RotateCcw,
-  Sliders
+  Sliders,
+  Sun,
+  Moon
 } from "lucide-react";
 import { ThanaDatabase, Personnel, LockupInmate, ArmouryItem, MalkhanaItem, BeatBookItem, DutyRosterItem, FirDraft } from "./types";
 
@@ -34,6 +36,15 @@ export default function App() {
   // UI States
   const [activeTab, setActiveTab] = useState<string>("dashboard");
   const [isHindi, setIsHindi] = useState<boolean>(true); // Prioritize Hindi as requested, single toggle to English
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem("theme");
+    return saved ? saved === "dark" : true;
+  });
+  
+  useEffect(() => {
+    localStorage.setItem("theme", isDarkMode ? "dark" : "light");
+  }, [isDarkMode]);
+
   const [loading, setLoading] = useState<boolean>(false);
   const [errorText, setErrorText] = useState<string>("");
 
@@ -176,7 +187,7 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
-  // Fetch initial db and state from local server (with state cache fallback)
+  // Fetch initial db and state from local server (with state cache fallback and localStorage support for static deployments e.g., GitHub Pages)
   const syncDatabase = async () => {
     try {
       const res = await fetch("/api/db");
@@ -185,13 +196,33 @@ export default function App() {
         setDb(serverData);
       }
     } catch (e) {
-      console.warn("Database fallback loaded. Running as client-side dynamic instance.", e);
+      console.warn("Database server offline. Running as self-contained client-side instance.", e);
     }
   };
 
   useEffect(() => {
+    // 1. First, restore from localStorage if available (highly important for static/GitHub Pages hosts)
+    const savedDb = localStorage.getItem("thana_db_v1");
+    if (savedDb) {
+      try {
+        const parsed = JSON.parse(savedDb);
+        if (parsed && typeof parsed === "object" && Array.isArray(parsed.personnel)) {
+          setDb(parsed);
+        }
+      } catch (err) {
+        console.error("Local Thana DB parse failed:", err);
+      }
+    }
+    // 2. Then attempt to sync with the server backend if it's running
     syncDatabase();
   }, []);
+
+  // Sync state changes to localStorage for client-side persistence (e.g. GitHub Pages)
+  useEffect(() => {
+    if (db && db.personnel && db.personnel.length > 0) {
+      localStorage.setItem("thana_db_v1", JSON.stringify(db));
+    }
+  }, [db]);
 
   // API Action: Draft FIR with AI (Crime GPT)
   const handleDraftFir = async () => {
@@ -223,22 +254,46 @@ export default function App() {
         }
       }
     } catch (err: any) {
-      console.error(err);
-      setErrorText("Gemini Connection Error. Displaying offline-safe Indian Legal Draft.");
-      // Standard local backup fallback
+      console.warn("Client-side fallback FIR generation active:", err);
+      setErrorText("Running in static client/offline mode. Generating Indian BNS Legal Draft dynamically.");
+      
+      const randomNo = Math.floor(100 + Math.random() * 900);
+      let sections = "BNS Section 303(2) (Theft equivalent) / Section 304 BNS (Snatching)";
+      let hiSections = "बीएनएस धारा 303(2) (चोरी) / धारा 304 (झपटमारी)";
+      
+      const textNorm = speechNarration.toLowerCase();
+      if (textNorm.includes("accident") || textNorm.includes("gadi") || textNorm.includes("car") || textNorm.includes("accident") || textNorm.includes("टक्कर") || textNorm.includes("एक्सीडेंट")) {
+        sections = "BNS Section 281 (Rash driving) / Section 106(1) (Causing death by negligence or grievous hurt)";
+        hiSections = "बीएनएस धारा 281 (तेज गति से वाहन चलाना) / धारा 106(1) (लापरवाही से चोट पहुंचाना)";
+      } else if (textNorm.includes("fight") || textNorm.includes("assault") || textNorm.includes("marpeet") || textNorm.includes("pitai") || textNorm.includes("मारपीट") || textNorm.includes("मारा")) {
+        sections = "BNS Section 115(2) (Voluntarily causing hurt) / Section 352 (Criminal assault)";
+        hiSections = "बीएनएस धारा 115(2) (स्वेच्छा से चोट पहुंचाना) / धारा 352 (आपराधिक हमला)";
+      } else if (textNorm.includes("cheat") || textNorm.includes("fraud") || textNorm.includes("paisa") || textNorm.includes("dhokha") || textNorm.includes("धोखा") || textNorm.includes("जालसाजी")) {
+        sections = "BNS Section 318 (Cheating) / Section 316 (Criminal breach of trust)";
+        hiSections = "बीएनएस धारा 318 (जालसाजी / धोखाधड़ी) / धारा 316 (आपराधिक विश्वासघात)";
+      } else if (textNorm.includes("money") || textNorm.includes("snatch") || textNorm.includes("cheen") || textNorm.includes("loot") || textNorm.includes("छीना") || textNorm.includes("लूट")) {
+        sections = "BNS Section 304 (Snatching) / Section 309 (Robbery)";
+        hiSections = "बीएनएस धारा 304 (झपटमारी) / धारा 309 (लूट)";
+      }
+
+      const complainantName = complainantInput || "Walk-In Complainant";
+      
+      const hiDraft = `शिकायतकर्ता ${complainantName} का बयान विधिवत दर्ज किया गया। घटना का विवरणानुसार: "${speechNarration}"। इसके आधार पर भारतीय न्याय संहिता (BNS) के अंतर्गत मामला धारा ${hiSections} के तहत दर्ज किया जा रहा है। थाना प्रभारी (SHO) द्वारा तत्काल जाँच एवं मौके का निरीक्षण हेतु निर्देश जारी कर दिए गए हैं।`;
+      const enDraft = `The statement of the complainant ${complainantName} was recorded at the duty branch. Based on the narrative: "${speechNarration}", a cognizable offense is registered under ${sections} of Bharatiya Nyaya Sanhita (BNS). The Beat Inspector is dispatched immediately to the site for panchnama & CCTV inquiry.`;
+
       setDraftResult({
-        id: "offline-101",
-        firNumber: `FIR No. ${Math.floor(100 + Math.random() * 900)}/2026`,
+        id: `offline-fir-${Date.now()}`,
+        firNumber: `FIR No. ${randomNo}/2026`,
         dateRecorded: new Date().toISOString(),
-        state: "National Capital Territory",
-        policeStation: "Kotwali Main Station",
-        complainant: complainantInput || "Complainant Harish Kumar",
-        suspect: "Unidentified local elements",
+        state: "National Capital Territory of Delhi",
+        policeStation: "Noida Sector-5 Kotwali",
+        complainant: complainantName,
+        suspect: "Unidentified suspects / local gang under trace",
         offenseDate: new Date().toISOString(),
         narration: speechNarration,
-        legalSections: "BNS Section 303(2) (Trivial Theft equivalent) / Section 304 BNS (Snatching)",
-        hindiDraft: `शिकायतकर्ता ${complainantInput || "नागरिक"} का बयान दर्ज किया गया। घटना विवरण: ${speechNarration}। भारतीय न्याय संहिता (BNS) के अंतर्गत एफआईआर सामान्य श्रेणी में अंकित की गई है। आवश्यक साक्ष्य एकत्रित किए जा रहे हैं।`,
-        englishDraft: `The statement of the complainant ${complainantInput || "individual"} has been recorded. Narration: "${speechNarration}". Case registered under BNS rules. Duty Inspector scheduled for immediate scene visit.`,
+        legalSections: sections,
+        hindiDraft: hiDraft,
+        englishDraft: enDraft,
         status: "Draft Filed Automatically"
       });
     } finally {
@@ -531,14 +586,49 @@ export default function App() {
       const data = await res.json();
       setAdvisorResponse(data.answer);
     } catch (e) {
-      setAdvisorResponse("AI Law Database unreachable. Summary rules: Ensure immediate care for lockup inmates. Seized cash must be double-locked in Godrej safe vaults in presence of magistrate. Standard firearms sign-out must always have countersignatures of SI.");
+      console.warn("Using smart client-side legal advisor rules:", e);
+      // Beautiful, comprehensive local BNS and Police protocol rules
+      const normalizedQuery = advisorQuery.toLowerCase();
+      let response = "";
+
+      if (normalizedQuery.includes("theft") || normalizedQuery.includes("chori") || normalizedQuery.includes("चोरी") || normalizedQuery.includes("303") || normalizedQuery.includes("304") || normalizedQuery.includes("snatch")) {
+        response = `⚖️ [BNS Law Guidance] BNS Section 303 (Theft):
+• Theft is now governed by Section 303 of the Bharatiya Nyaya Sanhita (BNS) [Old IPC Section 379].
+• Section 303(2) covers simple theft with punishment up to 3 years or fine or both.
+• Section 304 BNS specifies Snatching (झपटमारी) as a separate, distinct offense with increased penalties [Up to 3 years rigorous imprisonment].
+• Action Required: Secure any local CCTV feeds immediately and verify previous history of similar offenses.`;
+      } else if (normalizedQuery.includes("lockup") || normalizedQuery.includes("medical") || normalizedQuery.includes("inmate") || normalizedQuery.includes("safety") || normalizedQuery.includes("हवालात") || normalizedQuery.includes("बीमार")) {
+        response = `🚨 [Lockup Protocol - BNSS Guidelines]:
+• Under Bharatiya Nagarik Suraksha Sanhita (BNSS), physical safety of inmates is paramount.
+• Regular health checkups must be logged every hour. If an inmate complains of illness or diabetes, the government doctor must be informed within 15 minutes.
+• All personal belongings (belts, laces, sharp objects, money) must be signed and kept under lock in the Thana Safety Locker.
+• At least one lady constable must be present at all times for female lockups.`;
+      } else if (normalizedQuery.includes("malkhana") || normalizedQuery.includes("seize") || normalizedQuery.includes("evidence") || normalizedQuery.includes("cash") || normalizedQuery.includes("मालखाना") || normalizedQuery.includes("वही")) {
+        response = `📦 [Malkhana Evidence handling]:
+• Storage under double-lock is mandatory for high-value items (gold, raw cash, precious elements).
+• All narcotic substances or biological evidence must be sealed with Thana Lacquer stamp in air-tight bio-containers in the presence of two independent local witnesses.
+• Register No. 19 entry must match the tag ID precisely. No storage transfer can happen without written permission of the Magistrate [BNSS rules].`;
+      } else if (normalizedQuery.includes("assault") || normalizedQuery.includes("fight") || normalizedQuery.includes("marpeet") || normalizedQuery.includes("मारपीट") || normalizedQuery.includes("115")) {
+        response = `⚖️ [BNS Law Guidance - Assault/Hurt]:
+• Voluntarily causing hurt is covered under Section 115 BNS [Old IPC 323].
+• Grievous hurt is covered under Section 117 BNS [Old IPC 325].
+• Assault or criminal force to deter public servant is registered under Section 121 BNS [Old IPC 353].
+• Action Required: Refer the injured party to immediate Government Medical Examination (MLC) at the nearest Civil Hospital.`;
+      } else {
+        response = `🔍 [SPS Inteligência Police Code & BNS Advisor]:
+• Question Analyzed: "${advisorQuery}" in Category: "${advisorCategory}".
+• Standard Protocol: Ensure all details are written down in Thana GD (General Diary) entry immediately.
+• Digital Forensics: Any digital evidence (WhatsApp messages, call recordings, emails) must be certified under Section 63 of Bharatiya Sakshya Adhiniyam, 2023 (BSA) to be admissible in court.
+• If further consultation is needed, coordinate with the circle Deputy Superintendent of Police (DSP) or Prosecuting Inspector.`;
+      }
+      setAdvisorResponse(response);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-300">
+    <div className={`${isDarkMode ? "dark bg-slate-950 text-slate-100" : "light bg-slate-50 text-slate-900"} min-h-screen flex flex-col font-sans transition-colors duration-300`}>
       
       {/* Dynamic Upper Top Bar */}
       <div className="bg-slate-900 border-b border-slate-800 py-2.5 px-6 flex flex-wrap justify-between items-center gap-3">
@@ -558,6 +648,25 @@ export default function App() {
             className="flex items-center gap-2 px-3 py-1 bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs rounded-md border border-slate-700/60 transition text-blue-400 font-semibold"
           >
             🇮🇳 {isHindi ? "English में देखें" : "हिन्दी में देखें (Default)"}
+          </button>
+
+          {/* Theme Toggle Button */}
+          <button
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+            className="flex items-center gap-2 px-3 py-1 bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs rounded-md border border-slate-700/60 transition text-amber-500 hover:text-amber-400 font-semibold"
+          >
+            {isDarkMode ? (
+              <div className="flex items-center gap-1.5">
+                <Sun className="w-3.5 h-3.5 text-amber-400" />
+                <span>{isHindi ? "लाइट मोड" : "Light Mode"}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <Moon className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                <span>{isHindi ? "डार्क मोड" : "Dark Mode"}</span>
+              </div>
+            )}
           </button>
           
           <button

@@ -1,1 +1,168 @@
 @import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+/* Light Mode Overrides */
+.light {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.light .bg-slate-950 {
+  background-color: #f8fafc !important;
+}
+
+.light .bg-slate-900 {
+  background-color: #ffffff !important;
+}
+
+.light .bg-slate-800 {
+  background-color: #f1f5f9 !important;
+}
+
+.light .bg-slate-700 {
+  background-color: #e2e8f0 !important;
+}
+
+.light .border-slate-900,
+.light .border-slate-850,
+.light .border-slate-800,
+.light .border-slate-750,
+.light .border-slate-700 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Light text rules */
+.light .text-slate-50,
+.light .text-slate-100 {
+  color: #0f172a !important;
+}
+
+.light .text-slate-200 {
+  color: #1e293b !important;
+}
+
+.light .text-slate-300 {
+  color: #334155 !important;
+}
+
+.light .text-slate-400 {
+  color: #475569 !important;
+}
+
+.light .text-slate-500 {
+  color: #64748b !important;
+}
+
+.light .text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+.light .text-slate-700 {
+  color: #cbd5e1 !important;
+}
+
+.light .text-white {
+  color: #0f172a !important;
+}
+
+/* Hover over bg utilities in light mode */
+.light .hover\:bg-slate-900:hover {
+  background-color: #f1f5f9 !important;
+}
+
+.light .hover\:bg-slate-800:hover {
+  background-color: #e2e8f0 !important;
+}
+
+.light .hover\:text-white:hover {
+  color: #0f172a !important;
+}
+
+/* Form elements compatibility */
+.light input,
+.light select,
+.light textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.light input::placeholder,
+.light select::placeholder,
+.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+.light select option {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Special banner containers like bg-blue-950/40, bg-rose-950 etc */
+.light .bg-blue-950\/40 {
+  background-color: rgba(219, 234, 254, 0.6) !important;
+  color: #1e40af !important;
+}
+
+.light .bg-blue-950 {
+  background-color: #eff6ff !important;
+  color: #1e40af !important;
+}
+
+.light .bg-rose-950 {
+  background-color: #ffe4e6 !important;
+  color: #9f1239 !important;
+}
+
+.light .bg-amber-950 {
+  background-color: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+.light .bg-purple-950 {
+  background-color: #f3e8ff !important;
+  color: #6b21a8 !important;
+}
+
+.light .bg-emerald-950 {
+  background-color: #d1fae5 !important;
+  color: #065f46 !important;
+}
+
+.light .bg-indigo-950 {
+  background-color: #e0e7ff !important;
+  color: #3730a3 !important;
+}
+
+.light .bg-cyan-950 {
+  background-color: #ecfeff !important;
+  color: #075985 !important;
+}
+
+/* Alert boxes standard in details */
+.light .bg-red-950\/30 {
+  background-color: rgba(254, 226, 226, 0.7) !important;
+  color: #9f1239 !important;
+}
+
+.light .bg-amber-950\/20 {
+  background-color: rgba(254, 243, 199, 0.7) !important;
+  color: #92400e !important;
+}
+
+.light .bg-emerald-950\/30 {
+  background-color: rgba(209, 250, 229, 0.7) !important;
+  color: #065f46 !important;
+}
+
+/* Scrollbars inside light mode */
+.light ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+.light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+.light ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

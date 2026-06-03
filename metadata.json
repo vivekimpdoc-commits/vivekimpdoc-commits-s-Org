@@ -1,0 +1,8 @@
+{
+  "name": "AI-SPS Thana Dashboard",
+  "description": "AI-powered Smart Policing System (AI-SPS) with Armoury AI, Smart Duty Roster, Lockup Guard, Crime GPT FIR Drafting, digitized Beat Book, and MalKhana tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
